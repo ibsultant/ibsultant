@@ -113,7 +113,7 @@ author:
     - label: "Email"
       icon: "fas fa-fw fa-envelope-square"
       url: "mailto:ksch4301@naver.com"
-    - label: "sps.korea.ac.kr"
+    - label: "Lab.(sps.korea.ac.kr)"
       icon: "fab fa-fw fa-link"
 #      url: "sps.korea.ac.kr"
     - label: "Facebook"
