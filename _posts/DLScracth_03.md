@@ -1,0 +1,985 @@
+## 3. Neural Network
+
+#### _Contents_
+
+---
+1. 퍼셉트론에서 신경망으로  
+    
+    1.1. 신경망의 예<br>
+    1.2. 퍼셉트론 복습<br>
+    1.3. 활성화 함수의 등장
+    
+2. 활성화 함수
+    
+    2.1. 시그모이드 함수<br>
+    2.2. 계단 함수 구현하기<br>
+    2.3. 계단 함수의 그래프<br>
+    2.4. 시그모이드 함수 구현하기<br>
+    2.5. 시그모이드 함수와 계단 함수 비교<br>
+    2.6. 비선형 함수<br>
+    2.7. ReLU 함수
+
+3. 다차원 배열의 계산
+
+    3.1. 다차원 배열<br>
+    3.2. 행렬의 곱<br>
+    3.3. 신경망에서의 행렬 곱
+
+4. 3층 신경망 구현하기
+
+    4.1. 표기법 설명<br>
+    4.2. 각 층의 신호 전달 구현하기<br>
+    4.3. 구현 정리<br>
+    
+5. 출력층 설계하기
+
+    5.1. 항등 함수와 소프트맥스 함수 구현하기<br>
+    5.2. 소프트맥스 함수 구현 시 주의점<br>
+    5.3. 소프트맥스 함수의 특징<br>
+    5.4. 출력층의 뉴런 수 정하기
+
+6. 손글씨 숫자 인식
+
+    6.1. MNIST 데이터 셋<br>
+    6.2. 신경망의 추론 처리<br>
+    6.3. 배치 처리
+    
+7. 정리  
+---
+
+### 1. 퍼셉트론에서 신경망으로
+
+1.1. 신경망의 예
+
+
+```python
+from matplotlib.image import imread
+import matplotlib.pyplot as plt
+import pickle
+import numpy as np
+import sys
+import os
+```
+
+
+```python
+img_1 = imread('./dataset/images/fig 3-1.png')
+
+plt.imshow(img_1)
+plt.show()
+```
+
+
+    
+![png](output_4_0.png)
+    
+
+
+1.2. 퍼셉트론 복습
+
+기존의
+
+$$
+y = \begin{cases}
+0\quad(b+w_1x_1+w_2x_2\leq0)\\
+1\quad(b+w_1x_1+w_2x_2>0)
+\end{cases}
+$$
+
+해당 식을
+$$
+\begin{align}
+&y = h(b+w_1x_1+w_2x_2)\\\\
+&h(x)=\begin{cases}
+0\quad(x\leq0)\\
+1\quad(x>0)
+\end{cases}
+\end{align}
+$$
+로 좀 더 간결하게 나타낼 수 있다.
+
+1.3. 활성화 함수의 등장
+
+해당 $h(x)$를 activation function으로 부르며, 입력 신호의 총합이 활성화를 일으키는지 정하는 역할을 한다. 
+
+이 $h(x)$의 $x$를 $a$로 치환하여 다음과 같이 나타낼 수 있다.
+
+
+```python
+img_2 = imread('./dataset/images/fig 3-4.png')
+plt.imshow(img_2)
+plt.show()
+```
+
+
+    
+![png](output_9_0.png)
+    
+
+
+즉, 가중치 신호를 조합한 결과가 $a$라는 노드가 되고, 이 값이 활성화 함수 $h()$를 통과하여 $y$라는 노드로 변환된다. (노드 == 뉴런)
+
+### 2. 활성화 함수
+
+2.1. 시그모이드 함수
+
+신경망에서 자주 이용하는 활성화함수를 시그모이드 함수라고 부르고(다양한 함수들이 존재), 이는 다음과 같다.
+$$
+h(x) = \dfrac{1}{1+\exp(-x)}
+$$
+
+2.2. 계단함수 구현하기
+
+
+```python
+def step_func(x):
+    if x > 0:
+        return 1
+    else: 
+        return 0
+
+# np.array 타입의 자료형을 가정, 논리 연산자를 이용하는 함수 구현.
+def step_func_2(x):
+    y = x > 0
+    return y.astype(np.int)
+```
+
+2.3. 계단함수의 그래프
+
+
+```python
+def step_func_3(x):
+    return np.array(x > 0, dtype = int)
+
+x = np.arange(-5.0, 5.0, 0.1)
+y = step_func_3(x)
+plt.plot(x, y)
+plt.ylim(-0.1, 1.1)
+plt.show()
+```
+
+
+    
+![png](output_17_0.png)
+    
+
+
+2.4. 시그모이드함수 구현하기
+
+
+```python
+def sigmoid(x):
+    return 1/(1 + np.exp(-x))
+
+x = np.array([-1.0, 1.0, 2.0])
+sigmoid(x) #element-wise
+```
+
+
+
+
+    array([0.26894142, 0.73105858, 0.88079708])
+
+
+
+
+```python
+x = np.arange(-5, 5, 0.1) #궤적을 그리기 위해 촘촘하게 입력
+y = sigmoid(x)
+
+plt.plot(x, y)
+plt.ylim(-0.1, 1.1)
+plt.show()
+```
+
+
+    
+![png](output_20_0.png)
+    
+
+
+2.5. 시그모이드 함수와 계단 함수 비교
+
+2.6. 비선형 함수
+
+smoothness 측면에서 차이가 남을 확인할 수 있다. 외에 모양과 output bandwidth는 동일하다. 
+또한 둘 다 비선형 함수이므로 신경망을 깊게 쌓아 고차원 문제도 해결할 수 있는 특성을 지니고 있다. 
+
+
+```python
+x = np.arange(-5, 5, 0.1)
+y_1 = step_func_3(x)
+y_2 = sigmoid(x)
+
+plt.plot(x, y_1, linestyle = '--')
+plt.plot(x, y_2)
+```
+
+
+
+
+    [<matplotlib.lines.Line2D at 0x112c355a0>]
+
+
+
+
+    
+![png](output_22_1.png)
+    
+
+
+2.7. ReLU 함수
+
+외에 활성화 기준치를 선형적으로 반영하는, 가장 주류로 쓰이는 RuLU가 있다. 
+
+
+```python
+def ReLU(x):
+    return np.maximum(0, x)
+
+y_3 = ReLU(x)
+plt.plot(x, y_3)
+plt.show()
+```
+
+
+    
+![png](output_25_0.png)
+    
+
+
+### 3. 다차원 배열의 계산
+
+3.1. 다차원 배열 : 입력값 개수가 많은 고차원 신경망 계산을 위해 알아둘 필요가 있다.
+
+
+```python
+# 1-dim array
+
+A = np.array([1, 2, 3, 4])
+print('A : ', A)
+print('np.ndim(A) : ', np.ndim(A))
+print('A.shape : ', A.shape)
+print('A.shape[0] : ', A.shape[0])
+```
+
+    A :  [1 2 3 4]
+    np.ndim :  1
+    A.shape :  (4,)
+    A.shape[0] :  4
+
+
+
+```python
+# 2-dim array / 3x2 matrix (row 3, col 2)
+
+B = np.array([[1, 2],[3, 4],[5, 6]])
+print('B : \n', B)
+print('np.ndim(B) : ', np.ndim(B))
+print('B.shape : ', B.shape)
+```
+
+    B : 
+     [[1 2]
+     [3 4]
+     [5 6]]
+    np.ndim(B) :  2
+    B.shape :  (3, 2)
+
+
+3.2. 행렬의 곱 : 신경써야할 부분은 행렬 곱 이전 차원이 맞는지 여부다. 꼭 shape을 확인할 것.
+
+
+```python
+A = np.array([[1, 2], [3, 4]])
+B = np.array([[5, 6], [7, 8]])
+np.dot(A, B)
+```
+
+
+
+
+    array([[19, 22],
+           [43, 50]])
+
+
+
+3.3. 신경망에서의 행렬 곱 
+
+input value $x_1$, $x_2$는 각각 1, 2로 가정한다.
+
+
+```python
+img_3 = imread('./dataset/images/fig 3-14.png')
+
+plt.figure(figsize=(10, 10))
+plt.imshow(img_3)
+plt.show()
+```
+
+
+    
+![png](output_33_0.png)
+    
+
+
+
+```python
+X = np.array([1, 2])
+W = np.array([[1, 3, 5], [2, 4, 6]])
+
+Y = np.dot(X, W)
+
+print('X.shape : ', X.shape) # 1x2
+print('W.shape : ', W.shape) # 2x3
+print('Y : ', Y) # 1x3
+
+```
+
+    X.shape :  (2,)
+    W.shape :  (2, 3)
+    Y :  [ 5 11 17]
+
+
+### 4. 신경망 구현하기
+
+4.1. 표기법 설명 
+
+~~딥러닝 프레임워크에선 뉴런의 표기를 반대로 더 많이 한다~~
+
+해당 표기는 forward propagation 입장에서 transpose matrix를 요구하지 않기에 직관적인 장점이 있다. (NG 교수님의 방식)
+
+
+```python
+img_4 = imread('./dataset/images/fig 3-16.png')
+
+plt.figure(figsize=(10, 10))
+plt.imshow(img_4)
+plt.show()
+```
+
+
+    
+![png](output_37_0.png)
+    
+
+
+4.2. 각 층의 신호 전달 구현
+
+4.2.1. 입력층에서 1층으로 신호 전달
+
+
+```python
+img_5 = imread('./dataset/images/fig 3-17.png')
+img_6 = imread('./dataset/images/fig 3-18.png')
+img_7 = imread('./dataset/images/fig 3-19.png')
+img_8 = imread('./dataset/images/fig 3-20.png')
+
+plt.figure(figsize=(20, 15))
+
+plt.subplot(2,2,1, title = 'STEP 1')
+plt.imshow(img_5)
+plt.subplot(2,2,2, title = 'STEP 2')
+plt.imshow(img_6)
+plt.subplot(2,2,3, title = 'STEP 3')
+plt.imshow(img_7)
+plt.subplot(2,2,4, title = 'STEP 4')
+plt.imshow(img_8)
+
+plt.show()
+```
+
+
+    
+![png](output_40_0.png)
+    
+
+
+$$
+\begin{align}&
+a_1^{(1)} = w_{11}^{1}x_1+ w_{12}^{1}x_2+b_1^{(1)}
+\nonumber\\\nonumber\\\nonumber&
+\boldsymbol{A^{(1)} = XW^{(1)} + B^{(1)}}
+\\\nonumber\\\nonumber&
+\boldsymbol{A}^{(1)} = (\ a_1^{(1)}\quad a_2^{(1)}\quad a_3^{(1)}),
+\quad\boldsymbol{X}= (\ x_1\quad x_2),
+\quad \boldsymbol{B}^{(1)}=(\ b_1^{(1)}\quad b_2^{(1)}\quad b_3^{(1)})
+\\\nonumber\\\nonumber
+&{W}^{(1)}=
+\begin{pmatrix}
+\boldsymbol{w}_{11}^{(1)}&w_{21}^{(1)}&w_{31}^{(1)}
+\\w_{12}^{(1)}&w_{22}^{(1)}&w_{32}^{(1)}
+\end{pmatrix}
+\end{align}
+$$
+
+*(LaTeX 자주 안 써서 상당히 버겁네요)*
+
+해당 figure 요소 중 Step 1을 수식으로 나타내면 위와 같다. 
+
+이를 참고하여 다음 Step들도 표현할 수 있는데, numpy로 표현하면 다음과 같다.
+
+
+```python
+# Step_1
+
+X = np.array([1, 0.5])                              #(1, 2)
+W1 = np.array([[0.1, 0.3, 0.5],[0.2, 0.4, 0.6]])    #(2, 3)
+B1 = np.array([0.1, 0.2, 0.3])                      #(1, 3)
+
+A1 = np.dot(X, W1) + B1                             #(1, 2)*(2, 3) + (1, 3)
+Z1 = sigmoid(A1)
+
+print('A1 : ',A1)
+print('Z1 : ',Z1)
+```
+
+    A1 :  [0.3 0.7 1.1]
+    Z1 :  [0.57444252 0.66818777 0.75026011]
+
+
+
+```python
+# Step_2
+
+Z1 = Z1                                             #(1, 3)
+W2 = np.array([[0.1, 0.4],[0.2, 0.5],[0.3, 0.6]])   #(3, 2)
+B2 = np.array([0.1, 0.2])                           #(1, 2)
+
+A2 = np.dot(Z1, W2) + B2                            #(1, 3)*(3, 2) + (1, 2)
+Z2 = sigmoid(A2)
+
+print('A2 : ',A2)
+print('Z2 : ',Z2)
+```
+
+    A2 :  [0.51615984 1.21402696]
+    Z2 :  [0.62624937 0.7710107 ]
+
+
+
+```python
+# Step_3
+
+def identity_function(x):
+    return x
+
+Z2 = Z2                                 # (1, 2)
+W3 = np.array([[0.1, 0.3], [0.2, 0.4]]) # (2, 2)
+B3 = np.array([0.1, 0.2])               # (1, 2)
+
+A3 = np.dot(Z2, W3) + B3                # (1, 2)*(2, 2) + (1, 2)
+Y = identity_function(A3)
+
+print('A3 : ',A3)
+print('Y : ',Y)
+```
+
+    A3 :  [0.31682708 0.69627909]
+    Y :  [0.31682708 0.69627909]
+
+
+Step_3의 경우 마지막 $\sigma()$의 경우 최종 출력에 대한 항등함수에 해당한다. 이에 identity function으로 구현.
+
+4.3. 구현정리
+
+
+```python
+def init_network():
+    network = {} #dictionary
+    network['W1'] = np.array([[0.1, 0.3, 0.5],[0.2, 0.4, 0.6]])
+    network['b1'] = np.array([0.1, 0.2, 0.3])
+    network['W2'] = np.array([[0.1, 0.4],[0.2, 0.5], [0.3, 0.6]])
+    network['b2'] = np.array([0.1, 0.2])
+    network['W3'] = np.array([[0.1, 0.3],[0.2, 0.4]])
+    network['b3'] = np.array([0.1, 0.2])
+
+    return network
+
+def forward(network, x):
+    W1, W2, W3 = network['W1'], network['W2'], network['W3']
+    b1, b2, b3 = network['b1'], network['b2'], network['b3']
+
+    a1 = np.dot(x, W1) + b1
+    z1 = sigmoid(a1)
+    a2 = np.dot(z1, W2) + b2
+    z2 = sigmoid(a2)
+    a3 = np.dot(z2, W3) + b3
+    y = identity_function(a3)
+
+    return Y
+
+network = init_network()
+x = np.array([1.0, 0.5])
+y = forward(network, x)
+print(y)
+```
+
+    [0.31682708 0.69627909]
+
+
+### 5. 출력층 설계하기
+
+5.1. 항등 함수와 소프트맥스 함수 구현하기
+
+
+항등함수는 생략, 소프트맥스 함수는 다음과 같다.
+
+$$
+y_k = \dfrac{\exp(a_k)}{\sum\limits_{i=1}\limits^{n}\exp(a_i)}
+$$
+
+
+```python
+def softmax(a):
+    exp_a = np.exp(a)
+    sum_exp_a = np.sum(exp_a)
+    y = exp_a/sum_exp_a
+
+    return y
+```
+
+이는 구현입장에서 지수함수가 같는 특성(발산)으로 인해 오버플로 문제가 발생할 여지가 있다는 문제점이 있다. 이를 개선한 수식과 코드는 다음과 같다.
+
+$C'$은 보통 입력 값의 최대값을 빼주는 식으로 이용한다. 어차비 비중 문제이므로 resizing을 해준다고 생각하면 편하다. 
+
+$$
+\begin{align}
+y_k = \dfrac{\exp(a_k)}{\sum\limits_{i=1}\limits^{n}\exp(a_i)} &= \dfrac{C\exp(a_k)}{C\sum\limits_{i=1}\limits^{n}\exp(a_i)}\nonumber
+\\\nonumber
+&=\dfrac{\exp(a_k+\log C)}{\sum\limits_{i=1}\limits^{n}\exp(a_i+\log C)}
+\\
+&=\dfrac{\exp(a_k+C')}{\sum\limits_{i=1}\limits^{n}\exp(a_i+C')}\nonumber
+\end{align}
+$$
+
+
+```python
+# 반례
+
+a = np.array([1010, 1000, 990])
+np.exp(a) / np.sum(np.exp(a)) # exp(1010)은 당장봐도 무한대에 가까워 컴퓨터가 계산하기에 버겁다
+```
+
+    /var/folders/b9/mp1fh7ds7wz6829fc1klmjqr0000gn/T/ipykernel_44239/3696705076.py:4: RuntimeWarning: overflow encountered in exp
+      np.exp(a) / np.sum(np.exp(a)) # exp(1010)은 당장봐도 무한대에 가까워 컴퓨터가 계산하기에 버겁다
+    /var/folders/b9/mp1fh7ds7wz6829fc1klmjqr0000gn/T/ipykernel_44239/3696705076.py:4: RuntimeWarning: invalid value encountered in divide
+      np.exp(a) / np.sum(np.exp(a)) # exp(1010)은 당장봐도 무한대에 가까워 컴퓨터가 계산하기에 버겁다
+
+
+
+
+
+    array([nan, nan, nan])
+
+
+
+
+```python
+# 참 예시
+
+c = np.max(a)
+a - c # resizing
+print('a - c = ', (a-c))
+
+np.exp(a - c) / np.sum(np.exp(a - c))
+```
+
+    a - c =  [  0 -10 -20]
+
+
+
+
+
+    array([9.99954600e-01, 4.53978686e-05, 2.06106005e-09])
+
+
+
+
+```python
+def softmax_revised(a):
+    c = np.max(a)
+    exp_a = np.exp(a-c)
+    sum_exp_a = np.sum(exp_a)
+    y = exp_a / sum_exp_a
+
+    return y
+```
+
+5.3. 소프트맥스 함수의 특징
+
+output의 band가 0과 1 사이에 해당하며, 출력값의 합이 1이다. 이는 softmax function이 stochastic한 성질을 지니고 있다고 해석할 수 있다.
+
+즉 가장 그럴싸한 출력 값을 결과 값으로 선택함으로써 확률적으로 문제를 대응할 수 있게 된다. 항등함수와 사례와 마찬가지로 $\exp(x)$는 단조증가 함수이므로 대소관계엔 변화가 없다.
+
+바꿔말하면, weight와 bias가 fixed되면 굳이 연산량이 많은 softmax를 이용할 필요가 없다. (학습 시에는 사용, 추론 시에는 사용 X)
+
+5.4. 출력층의 뉴런 수 정하기 : 문제에서 분류하고 싶은 클래스의 개수(n) 혹은 예측 하고 싶은 값 하나(1) 등, 직접 정하는 user parameter에 해당된다. 
+
+### 6. 손글씨 숫자 인식
+
+학습이 되었다 가정하여 fixed weight $\boldsymbol{W}$ & fixed bias $\boldsymbol{B}$를 사용, 앞서 학습한 forward propagation을 추론문제에 적용한다.
+
+6.1. MNIST Dataset
+
+사이즈는 28 * 28, 픽셀 값은 0-255 값 중 하나를 취하는 손글씨 데이터입니다.
+
+
+```python
+from mnist import load_mnist
+import urllib.request
+import urllib
+import os.path
+import pickle
+import gzip
+```
+
+다음은 mnist dataset을 LeCun 홈페이지에서 자동으로 다운로드 및 데이터 편집을 하기 위한 세팅 코드입니다.
+
+
+```python
+# mnist.py
+
+url_base = 'http://yann.lecun.com/exdb/mnist/'
+key_file = {
+    'train_img' : 'train-images-idx3-ubyte.gz',
+    'train_label' : 'train-labels-idx1-ubyte.gz',
+    'test_img' : 't10k-labels-idx3-ubyte.gz',
+    'test_label' : 't10k-labels-idx1-ubyte.gz'
+}
+
+dataset_dir = os.path.dirname(os.path.abspath(__file__)) #interactive shell에선 실행되지 않고 .py에서 실행된다.
+save_file = dataset_dir + "/mnist.pkl" # 다양한 파이썬 자료형까지 저장을 지원하는 확장자
+
+train_num = 60000
+test_num = 10000
+img_dim = (1, 28, 28)
+img_size = 784
+
+def _download(file_name):                       # private 함수
+    file_path = dataset_dir +"/"+ file_name     # 입력받은 파일명을 기반으로 경로 설정/
+
+    if os.path.exists(file_path):               # 경로 생성여부 체크
+        return 
+    
+    print("Downloading " + file_name + "...")   
+    urllib.request.urlretrieve(url_base + file_name, file_path) # 다운로드 수행
+    print("Done")
+
+def download_mnist():               #key_file에 있는 파일명순으로 다운로드 실행
+    for v in key_file.values():
+        _download(v)
+                            #private func
+def _load_label(file_name): #label file type 설명을 보면 unsigned byte로 0008 offset이라 표기되어 있음
+    file_path = dataset_dir +'/'+ file_name
+
+    print("Converting " + file_name + " to NumPy Array ...")
+    with gzip.open(file_path, 'rb') as f:   # uint8 : unsigned int, 음이 아닌 0-255까지의 정수      
+        labels = np.frombuffer(f.read(), np.uint8, offset=8) # gz 기반의 바이너리 파일이라 컨버팅이 필요.
+    print("Done")
+
+    return labels
+
+def _load_img(file_name):
+    file_path = dataset_dir +'/'+ file_name
+
+    print("Converting " + file_name + " to NumPy Array ...")
+    with gzip.open(file_path, 'rb') as f:   # img file description 설명의 pixel 시작부분 offset 참고.
+        labels = np.frombuffer(f.read(), np.uint8, offset=16)  #gz 기반의 바이너리 파일이라 컨버팅이 필요.
+    data = data.reshape(-1, img_size) # image 사이즈에 맞게 재구조화. 여기선 784개의 col을 갖도록 재구조.
+    print("Done")
+
+    return data
+
+def _convert_numpy():
+    # 각 압축파일을 dataset dictionary에 encoding하여 저장.
+    dataset = {}
+    dataset['train_img'] =  _load_img(key_file['train_img'])
+    dataset['train_label'] = _load_label(key_file['train_label'])    
+    dataset['test_img'] = _load_img(key_file['test_img'])
+    dataset['test_label'] = _load_label(key_file['test_label'])
+
+def init_mnist():
+    download_mnist()            # 웹에서 MNIST 데이터 다운
+    dataset = _convert_numpy()  # 다운받은 파일을 컨버팅하여 딕셔너리에 저장
+    print("Creating pickle file ...")
+    with open(save_file, 'wb') as f:
+        pickle.dump(dataset, f, -1) # 여기서 -1은 protocol 인수로 최신 버전을 적용, 파일 저장에 문제 발생을 최소화한다.
+    print("Done!")
+
+def _change_one_hot_label(X):
+    T = np.zeros((X.size, 10))      # img 개수만큼 10개의 label 자리가 있는 배열 생성
+    for idx, row in enumerate(T):
+        row[X[idx]] = 1             # 실제 img index별 label 값만 1로 채워넣는 반복문 수행
+
+        return T
+
+def load_mnist(normalize=True, flatten=True, one_hot_labe=False):
+    """MNIST 데이터셋 읽기
+    
+    Parameters
+    ----------
+    normalize : 이미지의 픽셀 값을 0.0~1.0 사이의 값으로 정규화할지 정한다.
+    one_hot_label : 
+        one_hot_label이 True면、레이블을 원-핫(one-hot) 배열로 돌려준다.
+        one-hot 배열은 예를 들어 [0,0,1,0,0,0,0,0,0,0]처럼 한 원소만 1인 배열이다.
+    flatten : 입력 이미지를 1차원 배열로 만들지를 정한다. 
+    
+    Returns
+    -------
+    (훈련 이미지, 훈련 레이블), (시험 이미지, 시험 레이블)
+    """
+
+    if not os.path.exists(save_file):   # MNIST 인코딩 pickle 데이터 존재 여부 판단
+        init_mnist()
+        
+    with open(save_file, 'rb') as f:    # 해당 데이터 파이썬로드
+        dataset = pickle.load(f)
+    
+    if normalize:       # 데이터 변환 및 정규화
+        for key in ('train_img', 'test_img'):
+            dataset[key] = dataset[key].astype(np.float32)
+            dataset[key] /= 255.0
+            
+    if one_hot_label:   # one-hot encoding 여부를 판단하고 수행.
+        dataset['train_label'] = _change_one_hot_label(dataset['train_label'])
+        dataset['test_label'] = _change_one_hot_label(dataset['test_label'])    
+    
+    if not flatten:     # flatten 하지 않을 경우, 1*28*28 img로 저장
+         for key in ('train_img', 'test_img'):
+            dataset[key] = dataset[key].reshape(-1, 1, 28, 28)
+
+    return (dataset['train_img'], dataset['train_label']), (dataset['test_img'], dataset['test_label']) 
+
+if __name__ == '__main__': # 모듈로 불러오면 실행되지 않는 구문.
+    init_mnist()
+```
+
+코드구조는 다음과 같습니다.
+
+
+```python
+from PIL import Image
+
+img_9 = Image.open('./dataset/DLfromScratch_03_01.png')
+img_9 = img_9.resize((int(img_9.width/2), int(img_9.height/2)))
+img_9
+```
+
+
+
+
+    
+![png](output_68_0.png)
+    
+
+
+
+해당 코드를 모듈로 불러와 쓰면 다음과 같습니다.
+
+
+```python
+%load_ext autoreload
+%autoreload 2
+
+(x_train, t_train), (x_test, t_test) = load_mnist(flatten=True, normalize=False)
+```
+
+    The autoreload extension is already loaded. To reload it, use:
+      %reload_ext autoreload
+    Downloading train-images-idx3-ubyte.gz...
+    Done
+    Downloading train-labels-idx1-ubyte.gz...
+    Done
+    Downloading t10k-images-idx3-ubyte.gz...
+    Done
+    Downloading t10k-labels-idx1-ubyte.gz...
+    Done
+    Converting train-images-idx3-ubyte.gz to NumPy Array ...
+    Done
+    Converting train-labels-idx1-ubyte.gz to NumPy Array ...
+    Done
+    Converting t10k-images-idx3-ubyte.gz to NumPy Array ...
+    Done
+    Converting t10k-labels-idx1-ubyte.gz to NumPy Array ...
+    Done
+    Creating pickle file ...
+    Done!
+
+
+
+```python
+print('x_train.shape : ', x_train.shape)
+print('t_train.shape : ', t_train.shape)
+print('x_test.shape : ', x_test.shape)
+print('t_test.shape : ', t_test.shape)
+```
+
+    x_train.shape :  (60000, 784)
+    t_train.shape :  (60000,)
+    x_test.shape :  (10000, 784)
+    t_test.shape :  (10000,)
+
+
+
+```python
+def img_show(img):
+    pil_img = Image.fromarray(np.uint8(img))
+    return pil_img
+
+(x_train, t_train), (x_test, t_test) = load_mnist(flatten = True, normalize = False)
+
+# 첫 번째 이미지 로드
+
+img = x_train[0]
+label = t_train[0] # label : 5
+
+print('img.shape : ', img.shape)
+img = img.reshape(28, 28)
+print('img.shape : ', img.shape)
+
+img_show(img)
+```
+
+    img.shape :  (784,)
+    img.shape :  (28, 28)
+
+
+
+
+
+    
+![png](output_72_1.png)
+    
+
+
+
+6.2. 신경망의 추론 처리
+
+user parameter에 해당하는 hidden layer의 개수와 각 layer별 node의 개수는 (50, 100)으로 세팅합니다.
+
+즉 (784, 50, 100, 10) 으로 노드 구성이 됩니다. 추가로 weight는 sample weight를 가져다썼습니다.
+
+
+```python
+# 데이터 불러오기 및 네트워크 구성
+
+def get_data():
+    (x_train, t_train), (x_test, t_test) = load_mnist(flatten = True, normalize = True, one_hot_label = False)
+    return x_test, t_test
+
+def init_network():
+    with open('./dataset/mnist_sample_weight.pkl','rb') as f:
+        network = pickle.load(f)
+    
+    return network
+
+def predict(network, x):
+    W1, W2, W3 = network['W1'], network['W2'], network['W3']
+    b1, b2, b3 = network['b1'], network['b2'], network['b3']
+
+    a1 = np.dot(x, W1) + b1
+    z1 = sigmoid(a1)            # normalize 를 하지 않으면 overflow 문제 발생
+    a2 = np.dot(z1, W2) + b2
+    z2 = sigmoid(a2)
+    a3 = np.dot(z2, W3) + b3
+    y = softmax_revised(a3)
+
+    return y
+```
+
+
+```python
+# 평가
+
+x, t = get_data()
+network = init_network()
+
+accuracy_cnt = 0
+for i in range(len(x)):
+    y = predict(network, x[i])
+    p = np.argmax(y)            # softmax output(확률 값)이 가장 큰 원소의 인덱스 리턴
+    if p == t[i]:               # 정답 개수 체크
+        accuracy_cnt += 1
+
+print('Accuracy : ' + str(float(accuracy_cnt)/len(x)))
+```
+
+    Accuracy : 0.9352
+
+
+6.3. 배치 처리
+
+구현한 모델의 사이즈를 체크해보면 다음과 같다.
+
+
+```python
+x, _ = get_data()
+network = init_network()
+W1, W2, W3 = network['W1'], network['W2'], network['W3']
+
+print('x.shape : ', x.shape)
+print('x[0].shape : ', x[0].shape) #( 1 x 784)
+print('W1.shape : ', W1.shape)
+print('W2.shape : ', W2.shape)
+print('W3.shape : ', W3.shape)
+
+```
+
+    x.shape :  (10000, 784)
+    x[0].shape :  (784,)
+    W1.shape :  (784, 50)
+    W2.shape :  (50, 100)
+    W3.shape :  (100, 10)
+
+
+한 장을 input data로 쓰면 y : (1, 10) 로 output data가 출력됩니다.
+이를 100장에 적용한다치면, 아래의 형상을 지니게 됩니다.
+
+
+
+
+```python
+img_10 = Image.open('./dataset/images/fig 3-27.png')
+img_10
+```
+
+
+
+
+    
+![png](output_81_0.png)
+    
+
+
+
+
+```python
+x, t = get_data()
+network = init_network()
+
+batch_size = 100
+accuracy_cnt = 0
+
+for i in range(0, len(x), batch_size):
+    x_batch = x[i:i+batch_size]             # (batch_size, 784)
+    y_batch = predict(network, x_batch)     # (784 * 50, 50 * 100, 100 * 10)
+    p = np.argmax(y_batch, axis = 1)        
+    accuracy_cnt += np.sum(p == t[i:i+batch_size])
+
+print('Accuracy : ' + str(float(accuracy_cnt)/len(x)))
+```
+
+    Accuracy : 0.9352
+
+
+### 7. 정리
+
+* 신경망에서는 활성화 함수로 시그모이드 함수과 RuLU 함수 같은 매끄럽게 변화하는 함수를 이용한다.
+* NumPy의 다차원 배열을 잘 사용하면 신경망을 효과적으로 구현할 수 있다.
+* 기계학습 문제는 크게 회귀와 분류로 나눌 수 있다.
+* 출력층의 활성화 함수로는 회귀에서는 주로 항등 함수를, 분류에서는 주로 소프트맥스 함수를 이용한다.
+* 분류에서는 출력층의 뉴런 수를 분류하려는 클래스 수와 같게 설정한다.
+* 입력 데이터를 묶은 것을 배치라 하며, 추론 처리를 이 배치 단위로 진행하면 결과를 훨씬 빠르게 얻을 수 있다.
+
+
