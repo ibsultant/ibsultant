@@ -137,7 +137,7 @@ footer:
       url: "https://www.facebook.com/soonchan.kwon.14/"
     - label: "GitHub"
       icon: "fab fa-fw fa-github"
-      url: "https://ibsultant.github.com/"
+      # url: "https://ibsultant.github.com/"
     - label: "GitLab"
       icon: "fab fa-fw fa-gitlab"
       # url:
